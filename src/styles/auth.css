@@ -111,3 +111,79 @@
     font-size: 2rem;
   }
 }
+
+.phone-display {
+  font-weight: bold;
+  color: #25d366;
+  font-size: 1.1rem;
+  margin: 5px 0;
+}
+
+.form-hint {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.verification-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #25d366;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  padding: 5px 0;
+}
+
+.link-button:hover:not(:disabled) {
+  color: #20b358;
+}
+
+.link-button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.development-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.development-info p {
+  margin: 5px 0;
+}
+
+.development-info span {
+  font-family: "Courier New", monospace;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+/* Animation pour le champ de code */
+#verificationCode {
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+  font-family: "Courier New", monospace;
+}
+
+#verificationCode:focus {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}

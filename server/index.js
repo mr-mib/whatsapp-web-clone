@@ -258,3 +258,125 @@ Socket.IO`);
 server.listen(4000, () => {
   console.log("Serveur en écoute sur le port 4000");
 });
+
+// Ajoutez ces routes après les routes d'authentification existantes
+
+// Stockage temporaire des codes de vérification (en production, utilisez Redis ou une DB)
+let verificationCodes = new Map();
+
+// Route pour demander un code de vérification
+app.post("/api/auth/request-verification", (req, res) => {
+  const { phoneNumber } = req.body;
+  console.log("Demande de code de vérification pour:", phoneNumber);
+
+  // Vérifier si l'utilisateur existe déjà
+  const existingUser = users.find((u) => u.phoneNumber === phoneNumber);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "Un utilisateur avec ce numéro de téléphone existe déjà",
+    });
+  }
+
+  // Générer un code de vérification à 6 chiffres
+  const verificationCode = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
+
+  // Stocker le code avec une expiration de 5 minutes
+  verificationCodes.set(phoneNumber, {
+    code: verificationCode,
+    expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+    attempts: 0,
+  });
+
+  // En production, vous enverriez un SMS ici
+  console.log(`Code de vérification pour ${phoneNumber}: ${verificationCode}`);
+  res.json({
+    success: true,
+    message: "Code de vérification envoyé",
+    // En développement, on peut retourner le code pour faciliter les tests
+    // En production, ne jamais retourner le code ! developmentCode: verificationCode
+  });
+});
+
+// Route pour vérifier le code
+app.post("/api/auth/verify-code", (req, res) => {
+  const { phoneNumber, code } = req.body;
+
+  console.log("Vérification du code pour:", phoneNumber, "Code:", code);
+
+  const storedData = verificationCodes.get(phoneNumber);
+
+  if (!storedData) {
+    return res.status(400).json({
+      success: false,
+      message: "Aucun code de vérification trouvé pour ce numéro",
+    });
+  }
+
+  // Vérifier l'expiration
+  if (Date.now() > storedData.expires) {
+    verificationCodes.delete(phoneNumber);
+    return res.status(400).json({
+      success: false,
+      message: "Le code de vérification a expiré",
+    });
+  }
+
+  // Vérifier le nombre de tentatives
+  if (storedData.attempts >= 3) {
+    verificationCodes.delete(phoneNumber);
+    return res.status(400).json({
+      success: false,
+      message: "Trop de tentatives. Demandez un nouveau code.",
+    });
+  }
+
+  // Vérifier le code
+  if (storedData.code !== code) {
+    storedData.attempts++;
+    return res.status(400).json({
+      success: false,
+      message: "Code de vérification incorrect",
+      attemptsLeft: 3 - storedData.attempts,
+    });
+  }
+
+  // Code correct, supprimer de la mémoire
+  verificationCodes.delete(phoneNumber);
+
+  res.json({
+    success: true,
+    message: "Numéro de téléphone vérifié avec succès",
+  });
+});
+
+// Route pour renvoyer un code de vérification
+app.post("/api/auth/resend-verification", (req, res) => {
+  const { phoneNumber } = req.body;
+
+  console.log("Renvoi du code de vérification pour:", phoneNumber);
+
+  // Générer un nouveau code
+  const verificationCode = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
+
+  // Mettre à jour ou créer l'entrée
+  verificationCodes.set(phoneNumber, {
+    code: verificationCode,
+    expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+    attempts: 0,
+  });
+
+  console.log(
+    `Nouveau code de vérification pour ${phoneNumber}: ${verificationCode}`
+  );
+
+  res.json({
+    success: true,
+    message: "Nouveau code de vérification envoyé",
+    developmentCode: verificationCode,
+  });
+});

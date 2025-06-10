@@ -97,31 +97,41 @@ export class RegisterForm {
         errorMessage.style.display = "block";
         return;
       }
+
       if (password.length < 6) {
-        errorMessage.textContent = "Le mot de passe doit contenir au moins 6 caractères";
+        errorMessage.textContent =
+          "Le mot de passe doit contenir au moins 6 caractères";
         errorMessage.style.display = "block";
         return;
       }
 
       // Désactiver le bouton pendant la requête
       registerButton.disabled = true;
-      registerButton.textContent = "Inscription...";
+      registerButton.textContent = "Vérification du numéro...";
       errorMessage.style.display = "none";
+
       try {
-        const result = await authService.register(phoneNumber, password, name);
+        // Étape 1: Demander la vérification du numéro
+        const verificationResult = await authService.requestVerification(
+          phoneNumber
+        );
 
-        if (result.success) {
-          // Connexion Socket.IO
-          socketService.connect();
+        if (verificationResult.success) {
+          // Stocker temporairement les données d'inscription
+          this.tempRegistrationData = { name, phoneNumber, password };
 
-          // Appeler le callback de succès
-          this.onSuccess(result.user);
+          // Passer à l'écran de vérification
+          this.showPhoneVerification(
+            phoneNumber,
+            verificationResult.developmentCode
+          );
         } else {
-          errorMessage.textContent = result.message;
+          errorMessage.textContent = verificationResult.message;
           errorMessage.style.display = "block";
         }
       } catch (error) {
-        errorMessage.textContent = "Une erreur est survenue. Veuillez réessayer.";
+        errorMessage.textContent =
+          "Une erreur est survenue. Veuillez réessayer.";
         errorMessage.style.display = "block";
       }
 
@@ -132,9 +142,52 @@ export class RegisterForm {
 
     switchToLogin.addEventListener("click", (e) => {
       e.preventDefault();
-
-      // Émettre un événement personnalisé pour changer de vue
       this.container.dispatchEvent(new CustomEvent("switchToLogin"));
     });
+  }
+
+  showPhoneVerification(phoneNumber, developmentCode) {
+    // Import dynamique du composant de vérification
+    import("./PhoneVerificationForm.js").then(({ PhoneVerificationForm }) => {
+      const verificationForm = new PhoneVerificationForm(
+        this.container,
+        phoneNumber,
+        () => this.completeRegistration(), // onSuccess
+        () => this.render() // onBack
+      );
+
+      // Afficher le code en mode développement
+      if (developmentCode) {
+        verificationForm.showDevelopmentCode(developmentCode);
+      }
+    });
+  }
+
+  // Ajoutez cette méthode pour finaliser l'inscription après vérification;
+  async completeRegistration() {
+    const { name, phoneNumber, password } = this.tempRegistrationData;
+
+    try {
+      const result = await authService.register(phoneNumber, password, name);
+      if (result.success) {
+        // Connexion Socket.IO
+        socketService.connect();
+
+        // Appeler le callback de succès
+        this.onSuccess(result.user);
+      } else {
+        // Retourner au formulaire d'inscription avec l'erreur
+        this.render();
+        const errorMessage = this.container.querySelector("#errorMessage");
+        errorMessage.textContent = result.message;
+        errorMessage.style.display = "block";
+      }
+    } catch (error) {
+      this.render();
+      const errorMessage = this.container.querySelector("#errorMessage");
+      errorMessage.textContent =
+        "Une erreur est survenue lors de l'inscription.";
+      errorMessage.style.display = "block";
+    }
   }
 }

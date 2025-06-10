@@ -161,6 +161,84 @@ class AuthService {
   getToken() {
     return this.token;
   }
+
+  // =============== NOUVEAU: Mise à jour du service d'authentification ===============
+  /**
+   * Demande un code de vérification pour un numéro de téléphone
+   * @param {string} phoneNumber - Numéro de téléphone
+   * @returns {Promise<Object>} - Résultat de la demande
+   */
+  async requestVerification(phoneNumber) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/auth/request-verification`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phoneNumber }),
+        }
+      );
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Erreur lors de la demande de vérification:", error);
+      return { success: false, message: "Erreur de connexion au serveur" };
+    }
+  }
+
+  /**
+   * Vérifie le code de vérification
+   * @param {string} phoneNumber - Numéro de téléphone
+   * @param {string} code - Code de vérification
+   * @returns {Promise<Object>} - Résultat de la vérification
+   */
+  async verifyCode(phoneNumber, code) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/auth/verify-code`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phoneNumber, code }),
+        }
+      );
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Erreur lors de la vérification du code:", error);
+      return { success: false, message: "Erreur de connexion au serveur" };
+    }
+  }
+
+  /**
+   * Renvoie un code de vérification
+   * @param {string} phoneNumber - Numéro de téléphone
+   * @returns {Promise<Object>} - Résultat du renvoi
+   */
+  async resendVerification(phoneNumber) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/auth/resend-verification`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phoneNumber }),
+        }
+      );
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Erreur lors du renvoi du code:", error);
+      return { success: false, message: "Erreur de connexion au serveur" };
+    }
+  }
 }
 
 // Export d'une instance singleton
