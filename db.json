@@ -1,0 +1,51 @@
+{
+  "users": [
+    {
+      "id": "user1",
+      "phoneNumber": "+221771234567",
+      "name": "Sayande",
+      "profilePicture": "https://via.placeholder.com/150/FF0000/FFFFFF?text=A",
+      "status": "Hey there! I am using WhatsApp.",
+      "lastSeen": 1700000000000
+    },
+    {
+      "id": "user2",
+      "phoneNumber": "+221767654321",
+      "name": "Paul",
+      "profilePicture": "https://via.placeholder.com/150/0000FF/FFFFFF?text=B",
+      "status": "Available",
+      "lastSeen": 1700000000000
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg1",
+      "senderId": "user1",
+      "receiverId": "user2",
+      "chatId": "user1_user2",
+      "type": "text",
+      "content": "Salut Paul ! Comment vas-tu ?",
+      "timestamp": 1700000000000,
+      "status": "read"
+    },
+    {
+      "id": "msg2",
+      "senderId": "user2",
+      "receiverId": "user1",
+      "chatId": "user1_user2",
+      "type": "text",
+      "content": "Salut Sayande ! Je vais bien, merci. Et toi ?",
+      "timestamp": 1700000005000,
+      "status": "read"
+    }
+  ],
+  "chats": [
+    {
+      "id": "user1_user2",
+      "type": "individual",
+      "participants": ["user1", "user2"],
+      "lastMessageId": "msg2",
+      "unreadCount": 0
+    }
+  ]
+}
