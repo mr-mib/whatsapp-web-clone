@@ -3,18 +3,36 @@
     {
       "id": "user1",
       "phoneNumber": "+221771234567",
-      "name": "Sayande",
+      "password": "password123",
+      "name": "Moustapha Sayande",
       "profilePicture": "https://via.placeholder.com/150/FF0000/FFFFFF?text=A",
       "status": "Hey there! I am using WhatsApp.",
-      "lastSeen": 1700000000000
+      "lastSeen": 1700000000000,
+      "isOnline": false,
+      "contacts": [
+        {
+          "id": "user2",
+          "name": "Paul ODC",
+          "phoneNumber": "+221767654321"
+        }
+      ]
     },
     {
       "id": "user2",
       "phoneNumber": "+221767654321",
-      "name": "Paul",
+      "password": "password456",
+      "name": "Paul ODC",
       "profilePicture": "https://via.placeholder.com/150/0000FF/FFFFFF?text=B",
       "status": "Available",
-      "lastSeen": 1700000000000
+      "lastSeen": 1700000000000,
+      "isOnline": false,
+      "contacts": [
+        {
+          "id": "user1",
+          "name": "Moustapha Sayande",
+          "phoneNumber": "+221771234567"
+        }
+      ]
     }
   ],
   "messages": [

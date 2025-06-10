@@ -1,25 +1,260 @@
-// server/index.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
+
+// Configuration CORS pour Express
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
+// Middleware pour parser le JSON
+app.use(express.json());
+
+// Configuration Socket.IO avec CORS
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", methods: ["GET", "POST"] },
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
+
+// Simulation d'une base de données en mémoire (en production, utilisez une vraie DB)
+let users = [
+  {
+    id: "user1",
+    phoneNumber: "+221771234567",
+    password: "password123",
+    name: "Moustapha Sayande",
+    profilePicture: "https://via.placeholder.com/150/FF0000/FFFFFF?text=A",
+    status: "Hey there! I am using WhatsApp.",
+    lastSeen: Date.now(),
+    isOnline: false,
+    contacts: [
+      {
+        id: "user2",
+        name: "Paul ODC",
+        phoneNumber: "+221767654321",
+      },
+    ],
+  },
+  {
+    id: "user2",
+    phoneNumber: "+221767654321",
+    password: "password456",
+    name: "Paul ODC",
+    profilePicture: "https://via.placeholder.com/150/0000FF/FFFFFF?text=B",
+    status: "Available",
+    lastSeen: Date.now(),
+    isOnline: false,
+    contacts: [
+      {
+        id: "user1",
+        name: "Moustapha Sayande",
+        phoneNumber: "+221771234567",
+      },
+    ],
+  },
+];
+
+// Fonction pour générer un token simple (en production, utilisez JWT)
+function generateToken(userId) {
+  return `token_${userId}_${Date.now()}`;
+}
+
+// Fonction pour valider un token
+function validateToken(token) {
+  // Logique de validation simple (en production, validez un JWT)
+  if (token && token.startsWith("token_")) {
+    const parts = token.split("_");
+    return parts[1]; // Retourne l'ID utilisateur
+  }
+  return null;
+}
+
+// Route d'authentification
+app.post("/api/auth/login", (req, res) => {
+  const { phoneNumber, password } = req.body;
+
+  console.log("Tentative de connexion:", { phoneNumber, password });
+
+  // Recherche de l'utilisateur
+  const user = users.find(
+    (u) => u.phoneNumber === phoneNumber && u.password === password
+  );
+
+  if (user) {
+    // Génération du token
+    const token = generateToken(user.id);
+
+    // Mise à jour du statut en ligne
+    user.isOnline = true;
+    user.lastSeen = Date.now();
+
+    // Réponse avec les informations utilisateur (sans le mot de passe)
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({
+      success: true,
+      token,
+      user: userWithoutPassword,
+    });
+
+    console.log("Connexion réussie pour:", user.name);
+  } else {
+    res.status(401).json({
+      success: false,
+      message: "Numéro de téléphone ou mot de passe incorrect",
+    });
+
+    console.log("Échec de connexion pour:", phoneNumber);
+  }
+});
+
+// Route d'inscription
+app.post("/api/auth/register", (req, res) => {
+  const { phoneNumber, password, name } = req.body;
+
+  console.log("Tentative d'inscription:", { phoneNumber, name });
+
+  // Vérification si l'utilisateur existe déjà
+  const existingUser = users.find((u) => u.phoneNumber === phoneNumber);
+
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "Un utilisateur avec ce numéro de téléphone existe déjà",
+    });
+  }
+
+  // Création du nouvel utilisateur
+  const newUser = {
+    id: `user${Date.now()}`,
+    phoneNumber,
+    password,
+    name,
+    profilePicture: `https://via.placeholder.com/150/00FF00/FFFFFF?text=${name
+      .charAt(0)
+      .toUpperCase()}`,
+    status: "Hey there! I am using WhatsApp.",
+    lastSeen: Date.now(),
+    isOnline: true,
+    contacts: [],
+  };
+
+  users.push(newUser);
+
+  // Génération du token
+  const token = generateToken(newUser.id);
+
+  // Réponse avec les informations utilisateur (sans le mot de passe)
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.json({
+    success: true,
+    token,
+    user: userWithoutPassword,
+  });
+  console.log("Inscription réussie pour:", newUser.name);
+});
+
+// Route de validation de token
+app.post("/api/auth/validate", (req, res) => {
+  const { token } = req.body;
+
+  const userId = validateToken(token);
+
+  if (userId) {
+    const user = users.find((u) => u.id === userId);
+    if (user) {
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        success: true,
+        user: userWithoutPassword,
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+  } else {
+    res.status(401).json({
+      success: false,
+      message: "Token invalide",
+    });
+  }
+});
+
+// Route de déconnexion
+app.post("/api/auth/logout", (req, res) => {
+  const { token } = req.body;
+
+  const userId = validateToken(token);
+
+  if (userId) {
+    const user = users.find((u) => u.id === userId);
+    if (user) {
+      user.isOnline = false;
+      user.lastSeen = Date.now();
+    }
+  }
+
+  res.json({
+    success: true,
+    message: "Déconnexion réussie",
+  });
+});
+
+// Gestion des connexions Socket.IO
 io.on("connection", (socket) => {
-  console.log("a user connected");
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
+  console.log("Un utilisateur s'est connecté:", socket.id);
+
+  // Authentification via Socket.IO
+  socket.on("authenticate", (token) => {
+    const userId = validateToken(token);
+    if (userId) {
+      socket.userId = userId;
+      socket.join(`user_${userId}`);
+      console.log(`Utilisateur ${userId} authentifié via
+Socket.IO`);
+
+      // Mise à jour du statut en ligne
+      const user = users.find((u) => u.id === userId);
+      if (user) {
+        user.isOnline = true;
+        user.lastSeen = Date.now();
+      }
+    } else {
+      socket.emit("authentication_error", "Token invalide");
+    }
   });
 
-  // Exemple: écouter un événement 'chat message' et le retransmettre
+  socket.on("disconnect", () => {
+    console.log("Utilisateur déconnecté:", socket.id);
+
+    // Mise à jour du statut hors ligne
+    if (socket.userId) {
+      const user = users.find((u) => u.id === socket.userId);
+      if (user) {
+        user.isOnline = false;
+        user.lastSeen = Date.now();
+      }
+    }
+  });
+
+  // Exemple: écouter un événement 'chat message' et le retransmettre;
   socket.on("chat message", (msg) => {
     console.log("message: " + msg);
     io.emit("chat message", msg);
   });
 });
+
 server.listen(4000, () => {
-  console.log("listening on *:4000");
+  console.log("Serveur en écoute sur le port 4000");
 });
