@@ -5,6 +5,8 @@ import socketService from "./services/socketService.js";
 import sessionManager from "./utils/sessionManager.js";
 import { LoginForm } from "./components/auth/LoginForm.js";
 import { RegisterForm } from "./components/auth/RegisterForm.js";
+import { FirebaseAuthForm } from "./components/auth/FirebaseAuthForm.js";
+import firebaseAuthService from "./services/firebaseAuthService.js";
 
 class App {
   constructor() {
@@ -95,7 +97,47 @@ class App {
   }
 
   showAuthScreen() {
-    this.showLogin();
+    // Vérifier si Firebase est configuré
+    const useFirebase = this.shouldUseFirebase();
+    if (useFirebase) {
+      this.showFirebaseAuth();
+    } else {
+      this.showLogin();
+    }
+  }
+
+  // Détermine si on doit utiliser Firebase
+  shouldUseFirebase() {
+    // Ajoutez ici une logique dynamique si nécessaire
+    // Exemple : return process.env.USE_FIREBASE === 'true';
+    return false; // Changez en true pour activer Firebase par défaut
+  }
+
+  // Affiche le formulaire Firebase
+  showFirebaseAuth() {
+    const firebaseForm = new FirebaseAuthForm(this.container, (user) => {
+      this.currentUser = this.convertFirebaseUser(user);
+      this.showMainApp();
+    });
+
+    // Écouter l'événement personnalisé pour revenir à l'authentification classique
+    this.container.addEventListener("switchToClassic", () => {
+      this.showLogin();
+    });
+  }
+
+  // Convertit l'objet utilisateur Firebase en utilisateur local de l'app
+  convertFirebaseUser(firebaseUser) {
+    return {
+      id: firebaseUser.uid, // Correction : Firebase utilise `uid` et non `id`
+      name: firebaseUser.displayName || "Utilisateur Firebase",
+      phoneNumber: firebaseUser.phoneNumber || firebaseUser.email,
+      profilePicture:
+        firebaseUser.photoURL ||
+        "https://via.placeholder.com/150/25D366/FFFFFF?text=FB",
+      status: "Connecté via Firebase",
+      email: firebaseUser.email,
+    };
   }
 
   showLogin() {

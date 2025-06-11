@@ -187,3 +187,78 @@
   transform: scale(1.02);
   transition: transform 0.2s ease;
 }
+
+/* Styles pour Firebase Auth */
+
+.method-selection {
+  text-align: center;
+}
+
+.auth-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.auth-method-button {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  padding: 20px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.auth-method-button:hover {
+  background: #e9ecef;
+  border-color: #25d366;
+  transform: translateY(-2px);
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.tab-button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 15px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tab-button.active {
+  color: #25d366;
+  border-bottom-color: #25d366;
+}
+
+.tab-button:hover {
+  background: #f8f9fa;
+}
+
+#recaptcha-container {
+  margin-top: 20px;
+}
+
+/* Responsive pour les méthodes d'auth */
+@media (min-width: 480px) {
+  .auth-methods {
+    flex-direction: row;
+  }
+
+  .auth-method-button {
+    flex: 1;
+  }
+}
