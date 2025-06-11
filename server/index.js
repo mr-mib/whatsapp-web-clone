@@ -1,3 +1,9 @@
+const jwt = require("jsonwebtoken");
+
+// Clé secrète pour signer les JWT (en production, utilisez une variable d'environnement)
+const JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production";
+const JWT_EXPIRES_IN = "15d"; // Token valide pendant 15 jours
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -64,19 +70,60 @@ let users = [
   },
 ];
 
-// Fonction pour générer un token simple (en production, utilisez JWT)
+/*** Génère un token JWT pour un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {string} - Token JWT
+ */
 function generateToken(userId) {
-  return `token_${userId}_${Date.now()}`;
+  return jwt.sign(
+    {
+      userId,
+      type: "access_token",
+      iat: Math.floor(Date.now() / 1000),
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 }
 
-// Fonction pour valider un token
+/**
+ * Valide un token JWT
+ * @param {string} token - Token à valider
+ * @returns {string|null} - ID utilisateur si valide, null sinon
+ */
 function validateToken(token) {
-  // Logique de validation simple (en production, validez un JWT)
-  if (token && token.startsWith("token_")) {
-    const parts = token.split("_");
-    return parts[1]; // Retourne l'ID utilisateur
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.userId;
+  } catch (error) {
+    console.log("Token invalide:", error.message);
+    return null;
   }
-  return null;
+}
+
+/**
+ * Middleware pour vérifier l'authentification
+ */
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Token d'accès requis",
+    });
+  }
+
+  const userId = validateToken(token);
+  if (!userId) {
+    return res.status(403).json({
+      success: false,
+      message: "Token invalide ou expiré",
+    });
+  }
+
+  req.userId = userId;
+  next();
 }
 
 // Route d'authentification
@@ -378,5 +425,85 @@ app.post("/api/auth/resend-verification", (req, res) => {
     success: true,
     message: "Nouveau code de vérification envoyé",
     developmentCode: verificationCode,
+  });
+});
+
+// Route pour rafraîchir le token
+app.post("/api/auth/refresh", authenticateToken, (req, res) => {
+  const userId = req.userId;
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Utilisateur non trouvé",
+    });
+  }
+
+  // Générer un nouveau token
+  const newToken = generateToken(userId);
+
+  // Mettre à jour le statut de l'utilisateur
+  user.lastSeen = Date.now();
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({
+    success: true,
+    token: newToken,
+    user: userWithoutPassword,
+  });
+});
+
+// Route pour obtenir le profil utilisateur
+app.get("/api/user/profile", authenticateToken, (req, res) => {
+  const userId = req.userId;
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Utilisateur non trouvé",
+    });
+  }
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({
+    success: true,
+    user: userWithoutPassword,
+  });
+});
+
+// Route pour mettre à jour le profil utilisateur
+app.put("/api/user/profile", authenticateToken, (req, res) => {
+  const userId = req.userId;
+  const { name, status, profilePicture } = req.body;
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Utilisateur non trouvé",
+    });
+  }
+
+  // Mettre à jour les champs modifiables
+  if (name) user.name = name;
+  if (status) user.status = status;
+  if (profilePicture) user.profilePicture = profilePicture;
+  user.lastSeen = Date.now();
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({
+    success: true,
+    user: userWithoutPassword,
+    message: "Profil mis à jour avec succès",
+  });
+});
+
+// Route pour obtenir la liste des utilisateurs connectés
+app.get("/api/user/online", authenticateToken, (req, res) => {
+  const onlineUsers = users
+    .filter((u) => u.isOnline && u.id !== req.userId)
+    .map((u) => {
+      const { password: _, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+  res.json({
+    success: true,
+    users: onlineUsers,
   });
 });

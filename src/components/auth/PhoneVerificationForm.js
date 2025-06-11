@@ -7,7 +7,7 @@ export class PhoneVerificationForm {
     this.onSuccess = onSuccess;
     this.onBack = onBack;
     this.resendTimer = null;
-    this.resendCountdown = 60;
+    this.resendCountdown = 5;
     this.render();
     this.attachEventListeners();
     this.startResendTimer();
@@ -15,42 +15,42 @@ export class PhoneVerificationForm {
 
   render() {
     this.container.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-card">
-                <div class="auth-header">
-                    <h1>Vérification du numéro</h1>
-                    <p>Nous avons envoyé un code de vérification au</p>
-                    <p class="phone-display">${this.phoneNumber}</p>
-                </div>
-                <form id="verificationForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="verificationCode">Code de vérification</label>
-                        <input
-                            type="text"id="verificationCode"
-                            name="verificationCode"
-                            placeholder="123456"
-                            maxlength="6"
-                            pattern="[0-9]{6}"
-                            required
-                            autocomplete="one-time-code"
-                        >
-                        <small class="form-hint">Entrez le code à 6 chiffres reçu par SMS</small>
-                    </div>
-                    <button type="submit" class="auth-button" id="verifyButton">Vérifier</button>
-                    <div id="errorMessage" class="error-message" style="display: none;"></div>
-                </form>
-                <div class="verification-actions">
-                    <button id="resendButton" class="link-button" disabled>
-                        Renvoyer le code (<span id="countdown">60</span>s)
-                    </button>
-                    <button id="backButton" class="link-button">Modifier le numéro</button>
-                </div>
-                <div id="developmentInfo" class="development-info" style="display: none;">
-                    <p><strong>Mode développement:</strong></p>
-                    <p>Code: <span id="devCode"></span></p>
-                </div>
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h1>Vérification du numéro</h1>le code
+            <p>Nous avons envoyé un code de vérification au</p>
+            <p class="phone-display">${this.phoneNumber}</p>
+          </div>
+          <form id="verificationForm" class="auth-form">
+            <div class="form-group">
+              <label for="verificationCode">Code de vérification</label>
+                <input
+                  type="text"id="verificationCode"
+                  name="verificationCode"
+                  placeholder="123456"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  required
+                  autocomplete="one-time-code"
+                >
+              <small class="form-hint">Entrez le code à 6 chiffres reçu par SMS</small>
             </div>
+            <button type="submit" class="auth-button" id="verifyButton">Vérifier</button>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+          </form>
+          <div class="verification-actions">
+            <button id="resendButton" class="link-button" disabled>
+              Renvoyer le code (<span id="countdown">05</span>s)
+            </button>
+            <button id="backButton" class="link-button">Modifier le numéro</button>
+          </div>
+          <div id="developmentInfo" class="development-info" style="display: none;">
+            <p><strong>Mode développement:</strong></p>
+            <p>Code: <span id="devCode"></span></p>
+          </div>
         </div>
+      </div>
 `;
   }
 
@@ -164,7 +164,7 @@ export class PhoneVerificationForm {
     this.resendTimer = setInterval(() => {
       this.resendCountdown--;
       countdown.textContent = this.resendCountdown;
-      
+
       if (this.resendCountdown <= 0) {
         clearInterval(this.resendTimer);
         resendButton.disabled = false;
